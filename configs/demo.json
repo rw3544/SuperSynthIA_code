@@ -1,0 +1,37 @@
+{
+    "_comment_MODEL_LOCATION": "Path to the directory containing the trained models.",
+    "MODEL_LOCATION": "./Orig_Trained_Models",
+
+    "_comment_GLOBAL_DEVICE": "Device to be used for computation (e.g., 'cuda' or 'cpu').",
+    "GLOBAL_DEVICE": "cuda",
+
+    "_comment_output_name_list": "Choose from ['spDisambig_Bp', 'spDisambig_Br', 'spDisambig_Bt', 'spDisambig_Field_Azimuth_Disamb', 'spInv_aB', 'spInv_Field_Azimuth', 'spInv_Field_Inclination']",
+    "output_name_list": ["spInv_aB", "spInv_Field_Inclination", "spDisambig_Field_Azimuth_Disamb"],
+
+    "_comment_IQUV_DATA_DIR": "Directory containing the IQUV data.",
+    "IQUV_DATA_DIR": "/nfs/fouhey_pool3/users/ruoyuw/SYIA_REQUEST_DATA/May2024_1hour",
+
+    "_comment_OUTPUT_DIR": "Directory where the output will be saved.",
+    "OUTPUT_DIR": "/nfs/fouhey_pool3/users/ruoyuw/SYIA_REQUEST_PRED_ORIG_MODEL/Determistic_noise/trash",
+
+    "_comment_reproducible": "Whether to make the process reproducible. (Using a fixed 64x64 triangular noise for dithering)",
+    "reproducible": true,
+
+    "_comment_save_std": "Whether to save the per-pixel standard deviation.",
+    "save_std": false,
+
+    "_comment_save_CI": "Whether to save the per-pixel confidence intervals (90%).",
+    "save_CI": false,
+
+    "_comment_save_orig_logit": "Whether to save the original logits produced by the model, can be used to calculate probabilities of each bin.",
+    "save_orig_logit": false,
+
+    "_comment_use_parallel": "Whether to use parallel processing.",
+    "use_parallel": false,
+
+    "_comment_max_parallel_workers": "Set only if run in parallel, suggest to be # of cpus of your machine, turn down if have memory issue",
+    "max_parallel_workers": 8,
+
+    "_comment_postprocessing_mode": "Choose from ['none', 'generate_mask', 'fix_hole_overwrite', 'fix_hole_save_to_new'], for producing aB/Inclination/Azimuth only, please set to none to avoid any issue",
+    "postprocessing_mode": "none"
+}
