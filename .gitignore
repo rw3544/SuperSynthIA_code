@@ -1,2 +1,3 @@
-./Orig_Trained_Models
-./SMALL_DATASET
+Orig_Trained_Models/
+SMALL_DATASET/
+helpers/__pycache__/
