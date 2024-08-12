@@ -49,14 +49,17 @@ SuperSynthIA can occasionally produce small holes in $B_r$ within large sunspots
 
 SuperSynthIA supports analytic method to produce disambiguated components ($\alpha B_r$, $\alpha B_p$, $\alpha B_t$) from $\alpha B$, inclination, and azimuth. An example can be found in [analytic_disambig.py](./analytic_disambig.py).
 
+## Training
+
+You can find the SuperSynthIA training code in the [helpers/training_code](./helpers/training_code) directory. We will also be releasing our training dataset (~1TB) soon. Please note that the training code is not actively maintained, as we are currently developing an improved version that we aim to release in the near future.
 
 ## FAQ
 ### 1. CUDA out of memory
 - This issue is typically caused by the `CHUNK_SIZE` parameter in [full_disk_utils.py](./helpers/full_disk_utils.py) being set too high. For an A40 GPU with 48GB of memory, we default this value to 1024 to optimize processing speed. However, for GPUs with smaller memory capacities, it is recommended to use a `CHUNK_SIZE` of 256. Please ensure that `CHUNK_SIZE` is a multiple of 64 and that 4096 is divisible by `CHUNK_SIZE`.
 
 ### 2. Some hard-coded stuff
-1. BINS/ for the bins to be used for classification for each output
-2. Norm_params/ for the normalization parameters for each output
+1. [BINS/](./BINS) for the bins to be used for classification for each output
+2. [Norm_params/](./Norm_params) for the normalization parameters for each output
 
 
 ### 3. What does reproducible means?
