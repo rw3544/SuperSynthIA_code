@@ -13,21 +13,28 @@ conda activate SYIA
 
 ## Download model weights
 * The trained model weights can be downloaded [here](https://www.dropbox.com/scl/fi/0efn6xx8cwupyeejgtg7l/SYIA_ORIG_MODEL.tar.gz?rlkey=xfv7xu9ep4hbzz2zcxzzcvxb4&st=opew50xc&dl=0). (https://www.dropbox.com/scl/fi/0efn6xx8cwupyeejgtg7l/SYIA_ORIG_MODEL.tar.gz?rlkey=xfv7xu9ep4hbzz2zcxzzcvxb4&st=opew50xc&dl=0) <br>
-In our default setup, it is recommended to go to the root folder of this repository and then run 
+In our default setup, it is recommended to go to the root folder of this repository and then run the following code to download model to [./Orig_Trained_Models](./Orig_Trained_Models)
 ```
 wget -O SYIA_ORIG_MODEL.tar.gz "https://www.dropbox.com/scl/fi/0efn6xx8cwupyeejgtg7l/SYIA_ORIG_MODEL.tar.gz?rlkey=xfv7xu9ep4hbzz2zcxzzcvxb4&st=2pu3yzpw&dl=1"
 tar -xzf SYIA_ORIG_MODEL.tar.gz
 ```
-Then, the model can be found in [./Orig_Trained_Models](./Orig_Trained_Models)
 
-* SuperSynthIA runs on the hmi.M_720s data series as inputs. One can download such data from [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html).
-We also provide a small dataset for your convenience to test the code:
+* SuperSynthIA runs on the hmi.S_720s data series (level 1p IQUV data averaged at a cadence of 12 minutes) as inputs. One can download such data from [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html). Here is an example request: `hmi.S_720s[2024.05.07_00:48:00-2024.05.20_23:48:00@1h]`
+We also provide a small dataset for your convenience to test the code. If you run the following code, you can find the dataset in [./SMALL_DATASET](./SMALL_DATASET)
 
 ```
 wget -O SYIA_SMALL_DATASET.tar.gz "https://www.dropbox.com/scl/fi/6fivy89cq8f5xcdrrf7ug/SYIA_SMALL_DATASET.tar.gz?rlkey=erj4gth5rru85eamiqr2aunnq&st=y8sw3uu7&dl=1"
 tar -xzf SYIA_SMALL_DATASET.tar.gz 
 ```
-The dataset can then be found in [./SMALL_DATASET](./SMALL_DATASET)
+
+* We also provide a python script [get_iquv.py](./get_iquv.py) for your convenience to download data from JSOC easily. The steps are:
+
+   1. Go to [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html), fill in your request in `RecordSet` (ex: `hmi.S_720s[2024.05.07_00:48:00-2024.05.20_23:48:00@1h]`)
+   2. After the request have been submitted, the website will provide a `RequestID` for your reference. (ex: `JSOC_20240803_001234`) Wait a while for the request to be completed.
+   3. When the data is ready, a link will appear in `Data Location`. (ex: https://jsoc1.stanford.edu/SUM14/D1776011447/S00000/)
+   4. Run `python get_iquv.py save_location link`. `save_location` is the directory to store IQUV files, `link` is the url obtained from JSOC in step 3. (ex: `python get_iquv.py ./Input_Data https://jsoc1.stanford.edu/SUM14/D1776011447/S00000/`)
+
+Please note that JSOC advises against multi-threaded downloads, as this may cause your connection to drop and result in blank files. It is recommended to run one download process at a time.
     
 ## Inference:
 After you have set up conda environment and downloaded model weights:
@@ -48,6 +55,10 @@ SuperSynthIA can occasionally produce small holes in $B_r$ within large sunspots
 ### Analytic Method for producing $B_r$ , $B_p$ , $B_t$
 
 SuperSynthIA supports analytic method to produce disambiguated components ($\alpha B_r$, $\alpha B_p$, $\alpha B_t$) from $\alpha B$, inclination, and azimuth. An example can be found in [analytic_disambig.py](./analytic_disambig.py).
+
+### Fusing Polar and Disk
+
+As discussed in Section 4.4 of the paper, the direct and analytic methods each have their own trade-offs. The analytic method's predictions more closely resemble the Hinode pipeline results in regions of weak polarization, particularly at the poles. Therefore, we provide [fuse.py](./fuse.py), which merges the polar region predictions of the analytic method with predictions of the direct method for those who are interested.
 
 ## Training
 

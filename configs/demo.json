@@ -12,7 +12,7 @@
     "IQUV_DATA_DIR": "./SMALL_DATASET",
 
     "_comment_OUTPUT_DIR": "Directory where the output will be saved.",
-    "OUTPUT_DIR": "./test",
+    "OUTPUT_DIR": "./test/demo_output",
 
     "_comment_reproducible": "Whether to make the process reproducible. (Using a fixed 64x64 triangular noise for dithering)",
     "reproducible": true,
@@ -33,5 +33,5 @@
     "max_parallel_workers": 8,
 
     "_comment_postprocessing_mode": "Choose from ['none', 'generate_mask', 'fix_hole_overwrite', 'fix_hole_save_to_new'], for producing aB/Inclination/Azimuth only, please set to none to avoid any issue",
-    "postprocessing_mode": "fix_hole_save_to_new"
+    "postprocessing_mode": "none"
 }

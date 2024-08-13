@@ -5,13 +5,13 @@ if __name__ == "__main__":
     # Set all the variables
     
     # Directory of folder containing aB, Inclination, Azimuth predictions
-    PRED_DIR = "./YYYYY/20year_data"
+    PRED_DIR = "./test/demo_output"
     
     # Directory of folder containing input IQUV fits files
-    IQUV_DATA_DIR = "./twenty_years_data"
+    IQUV_DATA_DIR = "./SMALL_DATASET"
     
     # Directory where the output will be saved
-    SAVE_DIR = "./YYYYY/20year_data/Disambig"
+    SAVE_DIR = "./test/demo_output/Disambig"
     
     # Set True to use parallel processing
     use_parallel = True
