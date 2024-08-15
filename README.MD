@@ -1,6 +1,19 @@
 Thank you for your interest in [SuperSynthIA](https://rw3544.github.io/SuperSynthIA/)! You can find the project website [here](https://rw3544.github.io/SuperSynthIA/). (https://rw3544.github.io/SuperSynthIA/) This file will guide you through the repo and explain how to use our code. <br>
 **If you want us to produce data for you, please fill out this [form](https://forms.gle/8XyaXGc1q9wVBULi8).**
-# Instructions:
+
+# One minute walkthrough
+## All you need to run
+| File                  | Description                                                                                   |
+|-----------------------|-----------------------------------------------------------------------------------------------|
+| [demo.py](./demo.py)  | Produce predictions according to [config](./configs/demo.json) provided. Instruction for config is [here](#config-file-guide). |
+| [get_iquv.py](./get_iquv.py) | Download input fits files from [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html). Details [here](#download-input-data) |
+| [verify_data.py](./verify_data.py)  | Check if there is missing files in input data. Deatils [here](#download-input-data) |
+| [visualize.py](./visualize.py) | Visualizing Predictions saved as FITS Files |
+| [postprocessing.py](./postprocessing.py) | For Br, Generate unreliable mask and fix holes in predictions. Details [here](#postprocessing).   |
+| [analytic_disambig.py](./analytic_disambig.py) | Analytically calcualte $B_r$ , $B_p$ , $B_t$ using $\alpha B$, inclination, and azimuth. Details [here](#postprocessing) |
+| [fuse.py](./fuse.py) | Fuse polar region analytic predictions to direct ones. Details [here](#fusing-polar-and-disk) |
+
+# Detailed Instructions:
 
 ## Environment Setup
 This repo contains an environment.yml file that contains all necessary packages. Please run the following code to build a compatible conda environment.
@@ -19,6 +32,7 @@ wget -O SYIA_ORIG_MODEL.tar.gz "https://www.dropbox.com/scl/fi/0efn6xx8cwupyeejg
 tar -xzf SYIA_ORIG_MODEL.tar.gz
 ```
 
+## Download input data
 * SuperSynthIA runs on the hmi.S_720s data series (level 1p IQUV data averaged at a cadence of 12 minutes) as inputs. One can download such data from [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html). Here is an example request: `hmi.S_720s[2024.05.07_00:48:00-2024.05.20_23:48:00@1h]`
 We also provide a small dataset for your convenience to test the code. If you run the following code, you can find the dataset in [./SMALL_DATASET](./SMALL_DATASET)
 
@@ -34,6 +48,8 @@ tar -xzf SYIA_SMALL_DATASET.tar.gz
    3. When the data is ready, a link will appear in `Data Location`. (ex: https://jsoc1.stanford.edu/SUM14/D1776011447/S00000/)
    4. Run `python get_iquv.py save_location link`. `save_location` is the directory to store IQUV files, `link` is the url obtained from JSOC in step 3. (ex: `python get_iquv.py ./Input_Data https://jsoc1.stanford.edu/SUM14/D1776011447/S00000/`)
 
+* To ensure the completeness of your downloaded data, you can use [verify_data.py](./verify_data.py). Simply modify the `directory` variable, and for each timestamp, the script will verify the presence of all 24 I,Q,U,V FITS files. Any missing files will be listed.
+
 Please note that JSOC advises against multi-threaded downloads, as this may cause your connection to drop and result in blank files. It is recommended to run one download process at a time.
     
 ## Inference:
@@ -42,6 +58,8 @@ After you have set up conda environment and downloaded model weights:
 2. Go to [demo.py](./demo.py), change `config_location` to the location of your config file. Then, run `python demo.py`
 
 For detailed explaination of each parameter in the config file, click [here](#config-file-guide).
+
+Note that all predictions are saved as fits files, to load them, use `(fits.open(file_path))[1].data`
 
 ## Postprocessing:
 ### Holes in $B_r$

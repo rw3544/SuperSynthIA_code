@@ -20,6 +20,7 @@ def getFITS(fn):
     return urls
 
 if __name__ == "__main__":
+    # ex: python get_iquv.py ./Input_Data https://jsoc1.stanford.edu/SUM14/D1776011447/S00000/
     url = sys.argv[2]
     location = sys.argv[1]
     if not os.path.exists(location):

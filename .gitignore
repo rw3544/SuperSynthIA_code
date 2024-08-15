@@ -2,3 +2,4 @@ Orig_Trained_Models/
 SMALL_DATASET/
 helpers/__pycache__/
 test/
+*.txt
