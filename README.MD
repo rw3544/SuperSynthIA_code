@@ -2,7 +2,7 @@ Thank you for your interest in [SuperSynthIA](https://rw3544.github.io/SuperSynt
 **If you want us to produce data for you, please fill out this [form](https://forms.gle/8XyaXGc1q9wVBULi8).**
 
 # One minute walkthrough
-## All you need to run
+## All you need to use
 | File                  | Description                                                                                   |
 |-----------------------|-----------------------------------------------------------------------------------------------|
 | [demo.py](./demo.py)  | Produce predictions according to [config](./configs/demo.json) provided. Instruction for config is [here](#config-file-guide). |
