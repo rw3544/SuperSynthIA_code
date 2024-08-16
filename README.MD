@@ -13,6 +13,15 @@ Thank you for your interest in [SuperSynthIA](https://rw3544.github.io/SuperSynt
 | [analytic_disambig.py](./analytic_disambig.py) | Analytically calcualte $B_r$ , $B_p$ , $B_t$ using $\alpha B$, inclination, and azimuth. Details [here](#postprocessing) |
 | [fuse.py](./fuse.py) | Fuse polar region analytic predictions to direct ones. Details [here](#fusing-polar-and-disk) |
 
+
+## How to load output fits files
+
+By default, SuperSynthIA outputs everything into fits files. To load them, use: 
+```
+import astropy.io.fits as fits
+arr = (fits.open(FITS_LOCATION))[1].data
+```
+
 # Detailed Instructions:
 
 ## Environment Setup
@@ -59,7 +68,11 @@ After you have set up conda environment and downloaded model weights:
 
 For detailed explaination of each parameter in the config file, click [here](#config-file-guide).
 
-Note that all predictions are saved as fits files, to load them, use `(fits.open(file_path))[1].data`
+Note that all predictions are saved as fits files, to load them, use 
+```
+import astropy.io.fits as fits
+arr = (fits.open(FITS_LOCATION))[1].data
+```
 
 ## Postprocessing:
 ### Holes in $B_r$
