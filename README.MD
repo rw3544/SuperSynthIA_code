@@ -7,7 +7,7 @@ Thank you for your interest in [SuperSynthIA](https://rw3544.github.io/SuperSynt
 |-----------------------|-----------------------------------------------------------------------------------------------|
 | [demo.py](./demo.py)  | Produce predictions according to [config](./configs/demo.json) provided. Instruction for config is [here](#config-file-guide). |
 | [get_iquv.py](./get_iquv.py) | Download input fits files from [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html). Details [here](#download-input-data) |
-| [verify_data.py](./verify_data.py)  | Check if there is missing files in input data. Deatils [here](#download-input-data) |
+| [verify_data.py](./verify_data.py)  | Check if there is missing or incorrectly named fits files in input data. Deatils [here](#download-input-data) |
 | [visualize.py](./visualize.py) | Visualizing Predictions saved as FITS Files |
 | [postprocessing.py](./postprocessing.py) | For Br, Generate unreliable mask and fix holes in predictions. Details [here](#postprocessing).   |
 | [analytic_disambig.py](./analytic_disambig.py) | Analytically calcualte $B_r$ , $B_p$ , $B_t$ using $\alpha B$, inclination, and azimuth. Details [here](#postprocessing) |
@@ -57,7 +57,7 @@ tar -xzf SYIA_SMALL_DATASET.tar.gz
    3. When the data is ready, a link will appear in `Data Location`. (ex: https://jsoc1.stanford.edu/SUM14/D1776011447/S00000/)
    4. Run `python get_iquv.py save_location link`. `save_location` is the directory to store IQUV files, `link` is the url obtained from JSOC in step 3. (ex: `python get_iquv.py ./Input_Data https://jsoc1.stanford.edu/SUM14/D1776011447/S00000/`)
 
-* To ensure the completeness of your downloaded data, you can use [verify_data.py](./verify_data.py). Simply modify the `directory` variable, and for each timestamp, the script will verify the presence of all 24 I,Q,U,V FITS files. Any missing files will be listed.
+* To ensure the completeness and correctness of your downloaded data, you can use [verify_data.py](./verify_data.py). Simply modify the `directory` variable, and for each timestamp, the script will verify the presence of all 24 I,Q,U,V FITS files. Any missing files will be listed. It will also check if all fits files are named correctly like `hmi.S_720s.20100924_110000_TAI.1.U1.fits`. It is worth noting that sometimes fits files provided by [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html) maybe incorrectly named to be something like `hmi.S_720s.202192.V5.fits`. If such thing occurs, [verify_data.py](./verify_data.py) offers an option to delete all the incorrectly named files. Then, you can just request that data again through JSOC and download the correctly named ones.
 
 Please note that JSOC advises against multi-threaded downloads, as this may cause your connection to drop and result in blank files. It is recommended to run one download process at a time.
     
@@ -113,6 +113,10 @@ We employ logit dithering to introduce noise into the log-probabilities predicte
 
 Given the SuperSynthIA predictions for $B_r$, $B_p$, and $B_t$, we can construct a proxy for the continuum intensity and compare it with the actual continuum intensity. Significant differences between the two indicate that the SuperSynthIA predictions may not be reliable. If you are interested in the details, check `continuum_process_file` in [full_disk_utils.py](./helpers/full_disk_utils.py).
 
+
+### 5. Why some fits files downloaded from [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html) have abnormal file names?
+
+Occasionally, IQUV FITS files downloaded from JSOC may have incorrect filenames, such as `hmi.S_720s.202192.V5.fits`, instead of the correct format like `hmi.S_720s.20100924_110000_TAI.1.U1.fits`. If this happens, you can use [verify_data.py](./verify_data.py) to identify and remove all improperly named files. Afterward, request the data again to download the correctly named files.
 
 
 ## Config file Guide

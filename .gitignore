@@ -3,3 +3,4 @@ SMALL_DATASET/
 helpers/__pycache__/
 test/
 *.txt
+configs/pred.json
