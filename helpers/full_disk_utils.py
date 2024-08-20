@@ -54,19 +54,23 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
         imageData = -imageData[::-1,::-1]
     else:
         imageData = imageData[::-1,::-1]
-    header0 = fits.Header()
+    header0 = (headerSrc[0].header).copy()
+    
+    '''
     header1 = fits.Header()
     for k in headerSrc[0].header:
         if k in ["XTENSION","COMMENT","NAXIS0","NAXIS1","NAXIS2"]: continue
         header0[k] = headerSrc[0].header[k]
+    '''
 
-    data = [fits.PrimaryHDU(data=None, header=header0)]
+    data = [fits.PrimaryHDU(data=None, header=None)]
     if compress:
-        data += [fits.CompImageHDU(data=imageData, header=header1)]
-        #data += [fits.ImageHDU(data=imageData, header=header1)]
+        data += [fits.CompImageHDU(data=imageData, header=header0)]
     else:
-        data += [fits.ImageHDU(data=imageData, header=header1)]
+        data += [fits.ImageHDU(data=imageData, header=header0)]
 
+    # Comment out to be consistent with original hmi header
+    '''
     for k in headerSrc[1].header:
         if k in ["HISTORY","BITPIX","PCOUNT","GCOUNT","BZERO","BLANK","BSCALE","XTENSION","COMMENT",
                  "NAXIS0","NAXIS1","NAXIS2",
@@ -90,6 +94,7 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     now = datetime.now()
     date_time_str = now.strftime("%Y-%m-%d %H:%M:%S")
     data[1].header['GTIME'] = date_time_str
+    '''
     
     hdul = fits.HDUList(data)
     hdul.writeto(save_DIR, overwrite=True)
