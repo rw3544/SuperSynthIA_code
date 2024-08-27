@@ -53,7 +53,7 @@ def process_vis_file(i, pred_file_list, err_file_list, dir_path, save_path, y_na
     img_name = pred_file_list[i].replace('.fits', '.png')
     if 'Br' in img_name or 'Bp' in img_name or 'Bt' in img_name:
         arr = signed_sqrt(arr)
-        print(f'{img_name}')
+        #print(f'{img_name}')
     cmap_val, vmin_val, vmax_val = get_hexbin_range(y_name)
     plt.imsave(os.path.join(save_path, img_name), arr, cmap=cmap_val, vmin=vmin_val, vmax=vmax_val)
 
