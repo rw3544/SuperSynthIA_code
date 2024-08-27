@@ -55,46 +55,13 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     else:
         imageData = imageData[::-1,::-1]
     header0 = (headerSrc[0].header).copy()
-    
-    '''
-    header1 = fits.Header()
-    for k in headerSrc[0].header:
-        if k in ["XTENSION","COMMENT","NAXIS0","NAXIS1","NAXIS2"]: continue
-        header0[k] = headerSrc[0].header[k]
-    '''
 
     data = [fits.PrimaryHDU(data=None, header=None)]
     if compress:
-        data += [fits.CompImageHDU(data=imageData, header=header0)]
+        data += [fits.CompImageHDU(data=imageData, header=header0, compression_type='RICE_1', tile_shape=(64, 64), quantize_level=-0.01)]
     else:
         data += [fits.ImageHDU(data=imageData, header=header0)]
 
-    # Comment out to be consistent with original hmi header
-    '''
-    for k in headerSrc[1].header:
-        if k in ["HISTORY","BITPIX","PCOUNT","GCOUNT","BZERO","BLANK","BSCALE","XTENSION","COMMENT",
-                 "NAXIS0","NAXIS1","NAXIS2",
-                 "BITPIX", "PCOUNT", "GCOUNT", "ORIGIN", "CONTENT", "BLD_VERS", "HCAMID", "SOURCE",
-                 "TOTVALS", "DATAVALS", "MISSVALS", "DATAMIN2", "DATAMAX2", "DATAMED2", "DATAMEA2",
-                 "DATARMS2", "DATASKE2", "DATAKUR2", "DATAMIN", "DATAMAX", "DATAMEDN", "DATAMEAN", "DATARMS",
-                 "DATASKEW", "DATAKURT", "HFLID", "HCFTID", "QLOOK", "HWLTID", "HPLTID", "WAVELNID",
-                 "TSEL", "TFRONT", "TINTNUM", "SINTNUM", "DISTCOEF", "ROTCOEF", "ODICOEFF", "OROCOEFF", 
-                 "POLCALM", "CODEVER0", "CODEVER1", "CODEVER2", "CODEVER3", "CALVER64", "RECNUM", "DRMS_ID", "PRIMARYK",
-                 "LICENSE", "HEADSUM", "LONGSTRN", "CHECKSUM", "DATASUM"]: continue
-        data[1].header[k] = headerSrc[1].header[k]
-    
-    # Modify the header
-    data[1].header['BUNIT'] = 'Mx/cm^2'
-    data[1].header['GMETHOD'] = 'SuperSynthIA'
-    data[1].header['DESC'] = f'{short_name_partition}'
-    data[1].header['CODEVER'] = 'pre-release July 2024'
-    data[1].header['MODELVER'] = 'pre-release Original Model'
-    data[1].header['CODEURL'] = 'https://github.com/rw3544/SuperSynthIA'
-    
-    now = datetime.now()
-    date_time_str = now.strftime("%Y-%m-%d %H:%M:%S")
-    data[1].header['GTIME'] = date_time_str
-    '''
     
     hdul = fits.HDUList(data)
     hdul.writeto(save_DIR, overwrite=True)
@@ -659,7 +626,7 @@ def continuum_process_file(file_name, Bp_PRED_DIR, Br_PRED_DIR, Bt_PRED_DIR, IQU
     mask = mask.astype(np.uint8)
     arr = (proxy / I_new) / np.nanmedian(proxy / I_new)
 
-    plt.imsave(os.path.join(MASK_SAVE_DIR, 'vis', file_name.replace(".fits", "_mask.png")), mask, cmap='gray')
+    #plt.imsave(os.path.join(MASK_SAVE_DIR, 'vis', file_name.replace(".fits", "_mask.png")), mask, cmap='gray')
     #plt.imsave(os.path.join(MASK_SAVE_DIR, 'vis', file_name.replace(".fits", "_br.png")), Br, vmin=-2000, vmax=2000)
     #plt.imsave(os.path.join(MASK_SAVE_DIR, 'vis', file_name.replace(".fits", "_ratio.png")), arr, vmin=0, vmax=4)
     pack_to_fits(MASK_SAVE_DIR, I0_file_DIR, mask, fits.open(os.path.join(IQUV_DATA_DIR, I0_file_DIR)), '_mask', '')
@@ -677,8 +644,10 @@ def continuum_based_bad_point_identify(
     Br_PRED_DIR = os.path.join(PRED_DATA_DIR, 'spDisambig_Br')
     Bt_PRED_DIR = os.path.join(PRED_DATA_DIR, 'spDisambig_Bt')
     MASK_SAVE_DIR = os.path.join(PRED_DATA_DIR, 'MASK')
-    os.makedirs(os.path.join(MASK_SAVE_DIR, 'vis'), exist_ok=True)
+    os.makedirs(MASK_SAVE_DIR, exist_ok=True)
+    #os.makedirs(os.path.join(MASK_SAVE_DIR, 'vis'), exist_ok=True)
     file_list = [filename.replace("Bp", "XX") for filename in sorted(os.listdir(Bp_PRED_DIR)) if filename.endswith(".Bp.fits")]
+    print(f'Processing {len(file_list)} files')
     if parallel:
         with ProcessPoolExecutor(max_workers = max_parallel_workers) as executor:
             executor.map(
@@ -842,7 +811,7 @@ def Interpolation_samp_parallel(MODE, Br_PRED_DIR, MASK_SAVE_DIR, file_name, SAV
         if not os.path.exists(os.path.join(MASK_SAVE_DIR, 'hole_fix')):
             os.makedirs(os.path.join(MASK_SAVE_DIR, 'hole_fix'), exist_ok=True)
         #plt.imsave(os.path.join(MASK_SAVE_DIR, 'hole_fix', file_name.replace(".fits", "_dilated_mask.png")), mask)    
-        plt.imsave(os.path.join(MASK_SAVE_DIR, 'hole_fix', file_name.replace(".fits", "_data.png")), ssqrt(Br), vmin=-54, vmax=54, cmap='PuOr')
-        plt.imsave(os.path.join(MASK_SAVE_DIR, 'hole_fix', file_name.replace(".fits", "_dataFix.png")), ssqrt(dataFix), vmin=-54, vmax=54, cmap='PuOr')
+        #plt.imsave(os.path.join(MASK_SAVE_DIR, 'hole_fix', file_name.replace(".fits", "_data.png")), ssqrt(Br), vmin=-54, vmax=54, cmap='PuOr')
+        #plt.imsave(os.path.join(MASK_SAVE_DIR, 'hole_fix', file_name.replace(".fits", "_dataFix.png")), ssqrt(dataFix), vmin=-54, vmax=54, cmap='PuOr')
     
     

@@ -7,10 +7,10 @@ if __name__ == "__main__":
     postprocessing_mode = 'fix_hole_save_to_new'
     
     # Directory of folder containing Br/Bp/Bt predictions
-    PRED_DIR = './YYYYY/20year_data'
+    PRED_DIR = './test/demo_output'
     
     # Directory of folder containing input IQUV fits files
-    IQUV_DATA_DIR = './twenty_years_data'
+    IQUV_DATA_DIR = './SMALL_DATASET'
     
     # Set True to use parallel processing
     use_parallel = True
