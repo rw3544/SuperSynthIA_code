@@ -12,4 +12,7 @@ if __name__ == "__main__":
     # Directory where the output will be saved
     VIS_SAVE_DIR = "./test/demo_output/VIS"
     
-    fits_vis_packer(output_name_list, PRED_DIR, VIS_SAVE_DIR)
+    # Visualize every n-th file
+    every_n = 1
+    
+    fits_vis_packer(output_name_list, PRED_DIR, VIS_SAVE_DIR, every_n)

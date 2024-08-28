@@ -2,6 +2,8 @@ import numpy as np
 import os, json, sys
 import numpy as np
 import torch
+import shutil
+import subprocess
 from helpers.model import *
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -32,7 +34,7 @@ def getMetaData(HMIMap):
 
     return np.dstack([tx[:,:,None], ty[:,:,None], mask[:,:,None]]), np.dstack([txs[:,:,None], tys[:,:,None]]), mask
 
-
+'''
 # target: Save directory
 # file_name: input fits file name
 # headerSrc: fits header
@@ -65,6 +67,51 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     
     hdul = fits.HDUList(data)
     hdul.writeto(save_DIR, overwrite=True)
+
+'''
+
+def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, compress=True, whether_flip=True):
+    short_name = y_name.split('_', 1)[1]
+    parts = file_name.split(".")
+    short_name_partition = short_name + partition
+    parts[-3:] = [f'{short_name_partition}', f'fits']
+    file_name = ".".join(parts)
+    file_name = file_name.replace("S_720s", 'SuperSynthIA')
+    save_DIR = os.path.join(target, file_name)
+    
+    # Flip the data
+    if partition == '_orig_logit':
+        imageData = imageData[:, ::-1, ::-1]
+    elif y_name == '_mask' or whether_flip == False:
+        imageData = imageData
+    elif y_name == 'spDisambig_Bt' and partition != '_err':
+        imageData = -imageData[::-1, ::-1]
+    else:
+        imageData = imageData[::-1, ::-1]
+    
+    header0 = (headerSrc[0].header).copy()
+    
+    data = [fits.PrimaryHDU(data=None, header=None)]
+    data += [fits.ImageHDU(data=imageData, header=header0)]
+    
+    hdul = fits.HDUList(data)
+    uncompressed_save_DIR = save_DIR.replace('.fits', '_uncompressed.fits')
+    hdul.writeto(uncompressed_save_DIR, overwrite=True)
+    
+    if compress:
+        # Check if fpack is available
+        if shutil.which('fpack') is not None:
+            # Use fpack with RICE compression to compress the FITS file
+            t_command = " ".join(['fpack', '-O', save_DIR, '-q', '-0.01', uncompressed_save_DIR])
+            os.system(t_command)
+            # Remove the uncompressed file after compression
+            os.remove(uncompressed_save_DIR)
+        else:
+            print(f'fpack not found. Saving uncompressed file: {uncompressed_save_DIR}')
+    else:
+        # Rename the uncompressed file to the final name
+        os.rename(uncompressed_save_DIR, save_DIR)
+        print(f'Saved without compression: {save_DIR}')
 
 
 # For 80 days of data

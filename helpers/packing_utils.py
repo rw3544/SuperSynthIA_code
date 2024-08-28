@@ -90,6 +90,8 @@ def postprocessing_packer(postprocessing_mode, OUTPUT_DIR, IQUV_DATA_DIR, use_pa
     
 
 def SuperSynthIA_predict_packer(json_dir):
+    #torch.use_deterministic_algorithms(True)
+    
     # Default stuff
     BIN_FOLDER = "./BINS"
     Norm_params_FOLDER = "./Norm_params"

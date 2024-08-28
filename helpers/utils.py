@@ -1,4 +1,4 @@
-import os, re
+import os, re, threading
 import numpy as np
 import zarr
 import torch
@@ -192,23 +192,30 @@ def confidence_Interval_simple(bins, prob, percent):
                 break
     return left_val, right_val
 
+# Create a global lock
+seed_lock = threading.Lock()
 
 
+def triangular_distribution(arr_shape, device, seed=None):
+    with seed_lock:
+        with torch.random.fork_rng():
+            if seed is not None:
+                # Set the new seed inside the context
+                torch.manual_seed(seed)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed(seed)
+                    
+            # Generate random numbers
+            uni = torch.rand(arr_shape, device=device)
+            X = torch.zeros_like(uni, device=device)
+            gmask = (uni >= 0.5)
+            lmask = torch.logical_not(gmask)
 
-def triangular_distribution(arr_shape, device, seed = None):
-    if seed is not None:
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed(seed)
-            
-    uni = torch.rand(arr_shape, device=device)
-    X = torch.zeros_like(uni, device=device)
-    gmask = (uni >= 0.5)
-    lmask = torch.logical_not(gmask)
-    
-    X[lmask] = np.sqrt(6) * (-1 + torch.sqrt(2*uni[lmask]))
-    X[gmask] = -(np.sqrt(6)*(-12 + torch.sqrt(-288*uni[gmask] + 288))) / 12 
-    return X 
+            X[lmask] = np.sqrt(6) * (-1 + torch.sqrt(2*uni[lmask]))
+            X[gmask] = -(np.sqrt(6)*(-12 + torch.sqrt(-288*uni[gmask] + 288))) / 12 
+
+        # RNG state is automatically restored after the with block
+    return X
 
 
 

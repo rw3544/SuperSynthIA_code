@@ -68,12 +68,10 @@ def process_vis_file(i, pred_file_list, err_file_list, dir_path, save_path, y_na
         plt.imsave(os.path.join(save_path, img_name), arr, cmap='hot', vmin=0, vmax=2000)
 
 
-def fits_vis_packer(output_name_list, dir_base_path, save_base_path):
+def fits_vis_packer(output_name_list, dir_base_path, save_base_path, every_n = 1):
     for y_name in output_name_list:
         dir_path = os.path.join(dir_base_path, y_name)
         save_path = os.path.join(save_base_path, y_name)
-        #dir_path = f'./YYYYY/json_test_savenew/{y_name}'  # Replace with the actual directory path
-        #save_path = f'./YYYYY/VIS/json_test_savenew/{y_name}'
 
         # Get a list of all npy files in the directory
         pred_file_list = [file for file in sorted(os.listdir(dir_path)) if file.endswith('.fits') and 'err' not in file]
@@ -86,8 +84,8 @@ def fits_vis_packer(output_name_list, dir_base_path, save_base_path):
                 os.remove(file_path)
                 
         # Visualize every nth npy file
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            n = 1
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            n = every_n
             executor.map(process_vis_file, range(0, len(pred_file_list), n), [pred_file_list]*len(range(0, len(pred_file_list), n)),
                         [err_file_list]*len(range(0, len(pred_file_list), n)), [dir_path]*len(range(0, len(pred_file_list), n)),
                         [save_path]*len(range(0, len(pred_file_list), n)), [y_name]*len(range(0, len(pred_file_list), n)))
