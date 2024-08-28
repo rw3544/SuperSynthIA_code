@@ -111,7 +111,6 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     else:
         # Rename the uncompressed file to the final name
         os.rename(uncompressed_save_DIR, save_DIR)
-        print(f'Saved without compression: {save_DIR}')
 
 
 # For 80 days of data
