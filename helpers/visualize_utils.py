@@ -84,7 +84,15 @@ def fits_vis_packer(output_name_list, dir_base_path, save_base_path, every_n = 1
                 os.remove(file_path)
                 
         # Visualize every nth npy file
-        with concurrent.futures.ProcessPoolExecutor() as executor:
+        # Check if running on Slurm
+        max_workers = 1
+        if 'SLURM_CPUS_PER_TASK' in os.environ:
+            # Get the number of CPUs allocated by Slurm
+            max_workers = int(os.environ.get('SLURM_CPUS_PER_TASK', 1))
+        else:
+            # Fall back to the number of CPUs on the local machine
+            max_workers = os.cpu_count()
+        with concurrent.futures.ProcessPoolExecutor(max_workers = max_workers) as executor:
             n = every_n
             executor.map(process_vis_file, range(0, len(pred_file_list), n), [pred_file_list]*len(range(0, len(pred_file_list), n)),
                         [err_file_list]*len(range(0, len(pred_file_list), n)), [dir_path]*len(range(0, len(pred_file_list), n)),
