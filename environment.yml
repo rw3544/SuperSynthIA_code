@@ -1,4 +1,4 @@
-name: SYIA_orig
+name: SYIA
 channels:
   - conda-forge
 dependencies:
