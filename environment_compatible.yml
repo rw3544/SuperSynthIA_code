@@ -1,0 +1,22 @@
+name: SYIA_comp
+channels:
+  - conda-forge
+dependencies:
+  - numpy=1.26.0
+  - pip=23.2.1
+  - python=3.11.6
+  - zarr=2.16.1
+  - cfitsio=4.4.0
+  - pip:
+      - aioftp==0.21.4
+      - aiohttp==3.8.6
+      - astropy==5.3.4
+      - matplotlib==3.8.0
+      - nvidia-cudnn-cu12==8.9.2.26
+      - nvidia-nccl-cu12==2.18.1
+      - scipy==1.11.3
+      - sunpy==5.0.1
+      - torch==2.1.0
+      - torchvision==0.16.0
+      - tqdm==4.66.1
+      - triton==2.1.0

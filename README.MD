@@ -26,12 +26,13 @@ arr = (fits.open(FITS_LOCATION))[1].data
 
 ## Environment Setup
 This repo contains an environment.yml file that contains all necessary packages. Please run the following code to build a compatible conda environment.
-
-    
+ 
 ```
 conda env create -f environment.yml
 conda activate SYIA
 ```
+
+If you run into conflicts, we also provide [environment_compatible.yml](./environment_compatible.yml), which list version for essential packages only. 
 
 ## Download model weights
 * The trained model weights can be downloaded [here](https://www.dropbox.com/scl/fi/0efn6xx8cwupyeejgtg7l/SYIA_ORIG_MODEL.tar.gz?rlkey=xfv7xu9ep4hbzz2zcxzzcvxb4&st=opew50xc&dl=0). (https://www.dropbox.com/scl/fi/0efn6xx8cwupyeejgtg7l/SYIA_ORIG_MODEL.tar.gz?rlkey=xfv7xu9ep4hbzz2zcxzzcvxb4&st=opew50xc&dl=0) <br>
