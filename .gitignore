@@ -4,4 +4,3 @@ helpers/__pycache__/
 test/
 *.txt
 configs/pred.json
-configs/debug.json
