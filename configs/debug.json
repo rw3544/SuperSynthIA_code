@@ -9,10 +9,10 @@
     "output_name_list": ["spDisambig_Bp", "spDisambig_Br", "spDisambig_Bt", "spInv_aB", "spInv_Field_Inclination", "spDisambig_Field_Azimuth_Disamb"],
 
     "_comment_IQUV_DATA_DIR": "Directory containing the IQUV data.",
-    "IQUV_DATA_DIR": "./test/stanford_format/data",
+    "IQUV_DATA_DIR": "/vast/rw3544/SYIA_DATA/stanford_format/data",
 
     "_comment_OUTPUT_DIR": "Directory where the output will be saved.",
-    "OUTPUT_DIR": "./test/demo_output",
+    "OUTPUT_DIR": "./test/stanford/WithAddedKey",
 
     "_comment_reproducible": "Whether to make the process reproducible. (Using a fixed 64x64 triangular noise for dithering)",
     "reproducible": true,
@@ -33,5 +33,5 @@
     "max_parallel_workers": 8,
 
     "_comment_postprocessing_mode": "Choose from ['none', 'generate_mask', 'fix_hole_overwrite', 'fix_hole_save_to_new'], for producing aB/Inclination/Azimuth only, please set to none to avoid any issue",
-    "postprocessing_mode": "none"
+    "postprocessing_mode": "fix_hole_overwrite"
 }

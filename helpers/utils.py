@@ -221,7 +221,7 @@ def triangular_distribution(arr_shape, device, seed=None):
 
 def extract_timestamp_from_fits(filename):
     # Define the regex pattern to match the date and time in the filename
-    pattern = r'\d{8}_\d{6}'
+    pattern = r"\d{4}\.\d{2}\.\d{2}_\d{2}:\d{2}:\d{2}"
     
     # Search for the pattern in the filename
     match = re.search(pattern, filename)

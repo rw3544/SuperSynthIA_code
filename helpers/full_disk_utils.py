@@ -74,7 +74,7 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     short_name = y_name.split('_', 1)[1]
     parts = file_name.split(".")
     short_name_partition = short_name + partition
-    parts[-3:] = [f'{short_name_partition}', f'fits']
+    parts[-2:] = [f'{short_name_partition}', f'fits']
     file_name = ".".join(parts)
     file_name = file_name.replace("S_720s", 'SuperSynthIA')
     save_DIR = os.path.join(target, file_name)
@@ -93,6 +93,26 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     
     data = [fits.PrimaryHDU(data=None, header=None)]
     data += [fits.ImageHDU(data=imageData, header=header0)]
+    
+    #region Add SuperSynthIA info
+    data[1].header['BUNIT'] = 'Mx/cm^2'
+    # Data generation method
+    data[1].header['SSMET'] = 'SuperSynthIA'
+    # Type of data generated
+    data[1].header['SSDES'] = f'{short_name_partition}'
+    # SuperSynthIA code Version
+    data[1].header['SSCVR'] = 'Oct 2024'
+    # SuperSynthIA model Version
+    data[1].header['SSMVR'] = 'pre-release Original Model'
+    # SuperSynthIA code URL
+    data[1].header['SSURL'] = 'https://github.com/rw3544/SuperSynthIA'
+    
+    now = datetime.now()
+    date_time_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    # SuperSynthIA prediction generation time
+    data[1].header['SSDAT'] = date_time_str
+    
+    #endreigon
     
     hdul = fits.HDUList(data)
     uncompressed_save_DIR = save_DIR.replace('.fits', '_uncompressed.fits')
@@ -150,7 +170,7 @@ def concat_full_disk(DATA_DIR:str, filename):
     X[:,0,:,:] = I0_arr
     
     
-    TIMESTAMP = filename[11:26]
+    TIMESTAMP = extract_timestamp_from_fits(filename)
     layer = 0
     # For I
     for i in range(6):
@@ -232,8 +252,7 @@ def inference_sample_full_disk_80_days(
     
     # X: 1,24,4096,4096
     # mask: 1,24,4096,4096
-    TIMESTAMP = extract_timestamp_from_fits(fits_file_name)
-    
+    #TIMESTAMP = extract_timestamp_from_fits(fits_file_name)
     
     with torch.no_grad():
         X = X.masked_fill_(~mask, 0)
@@ -563,17 +582,20 @@ def get_data_from_fits(fits_dir):
     arr = fits.open(fits_dir)[1].data
     return arr
 
-
+'''
 def extract_date_time(file_name):
     parts = file_name.split('.')
     date_time_str = parts[2]
     # Exclude the _TAI
     date_time_str = date_time_str[:-4]
     return date_time_str
+'''
 
-# Turn '20160513_204800' into dt
+# Turn '2016.05.13_20:48:00' into dt
 def date_time_to_dt(date_time_str):
-    dt = datetime(year=int(date_time_str[:4]), month=int(date_time_str[4:6]), day=int(date_time_str[6:8]), hour=int(date_time_str[9:11]), minute=int(date_time_str[11:13]))
+    dt = datetime(year=int(date_time_str[:4]), month=int(date_time_str[5:7]),
+                  day=int(date_time_str[8:10]), hour=int(date_time_str[11:13]),
+                  minute=int(date_time_str[14:16]))
     return dt
 
 # Given an array, calculate the average of the center 1024x1024
@@ -597,7 +619,7 @@ def continuum_calculate_mu(fits_src, ):
     # Load it into a sunpy map
     HMIMap = sunpy.map.Map(fits_src)
     
-    date_time_str = extract_date_time(os.path.basename(fits_src))
+    date_time_str = extract_timestamp_from_fits(os.path.basename(fits_src))
     dt = date_time_to_dt(date_time_str)
 
     # Create a meshgrid of the X / Y  
@@ -649,6 +671,8 @@ def continuum_process_file(file_name, Bp_PRED_DIR, Br_PRED_DIR, Bt_PRED_DIR, IQU
     B_mag = np.sqrt(Bp**2 + Br**2 + Bt**2)
 
     IQUV_base_file_name = file_name.replace('SuperSynthIA', "S_720s")
+    '''
+    # Not needed for Stanford format
     IQUV_DIGIT = None
     # Test both possible values
     if is_valid_iquv_digit(IQUV_base_file_name, 1, IQUV_DATA_DIR):
@@ -657,9 +681,10 @@ def continuum_process_file(file_name, Bp_PRED_DIR, Br_PRED_DIR, Bt_PRED_DIR, IQU
         IQUV_DIGIT = 3
     else:
         raise ValueError("Neither 1 nor 3 is a valid IQUV_DIGIT")
+    '''
     
-    I0_file_DIR = IQUV_base_file_name.replace("XX", f"{IQUV_DIGIT}.I0")
-    I5_file_DIR = IQUV_base_file_name.replace("XX", f"{IQUV_DIGIT}.I5")
+    I0_file_DIR = IQUV_base_file_name.replace("XX", f"I0")
+    I5_file_DIR = IQUV_base_file_name.replace("XX", f"I5")
     I0 = get_data_from_fits(os.path.join(IQUV_DATA_DIR, I0_file_DIR))
     I5 = get_data_from_fits(os.path.join(IQUV_DATA_DIR, I5_file_DIR))
     I_avg = (I0 + I5) / 2
