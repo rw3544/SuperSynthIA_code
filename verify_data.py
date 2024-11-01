@@ -3,7 +3,7 @@ import re
 from collections import defaultdict
 
 # Define the directory containing the files
-directory = "./SMALL_DATASET"
+directory = "test/stanford_format/data_1"
 
 # Option to delete incorrect format files
 delete_incorrect_files = False
@@ -23,7 +23,7 @@ issues_found = False
 
 # Loop through each file in the directory
 for filename in os.listdir(directory):
-    match = re.match(r"^hmi\.S_720s\.(\d{8}_\d{6}_TAI)\.1\.([IQUV])(\d)\.fits$", filename)
+    match = re.match(r"^hmi\.s_720s\.(\d{4}\.\d{2}\.\d{2}_\d{2}:\d{2}:\d{2}_TAI)\.([IQUV])(\d)\.fits$", filename)
     if match:
         timestamp, file_type, index = match.groups()
         files_dict[timestamp][file_type][int(index)] = True
