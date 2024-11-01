@@ -3,7 +3,7 @@ import re
 from collections import defaultdict
 
 # Define the directory containing the files
-directory = "test/stanford_format/data_1"
+directory = "test/stanford_format/"
 
 # Option to delete incorrect format files
 delete_incorrect_files = False
