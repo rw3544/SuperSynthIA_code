@@ -22,8 +22,8 @@ incorrect_format_count = 0
 issues_found = False
 
 # Loop through each file in the directory
-for filename in os.listdir(directory):
-    match = re.match(r"^hmi\.S_720s\.(\d{8}_\d{6}_TAI)\.1\.([IQUV])(\d)\.fits$", filename)
+for filename in sorted(os.listdir(directory)):
+    match = re.match(r"^hmi\.S_720s\.(\d{8}_\d{6}_TAI)\.[13]\.([IQUV])(\d)\.fits$", filename)
     if match:
         timestamp, file_type, index = match.groups()
         files_dict[timestamp][file_type][int(index)] = True
