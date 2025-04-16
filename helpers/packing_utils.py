@@ -96,7 +96,7 @@ def SuperSynthIA_predict_packer(json_dir):
     BIN_FOLDER = "./BINS"
     Norm_params_FOLDER = "./Norm_params"
     supported_output_name = ['spDisambig_Bp', 'spDisambig_Br', 'spDisambig_Bt', 'spDisambig_Field_Azimuth_Disamb', 'spInv_aB', 
-                 'spInv_Field_Azimuth', 'spInv_Field_Inclination',]
+                 'spInv_Field_Azimuth', 'spInv_Field_Inclination', 'spInv_Stray_Light_Fill_Factor']
     
     json_data = parse_json_file(json_dir)
     
