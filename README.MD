@@ -42,6 +42,11 @@ wget -O SYIA_ORIG_MODEL.tar.gz "https://www.dropbox.com/scl/fi/0efn6xx8cwupyeejg
 tar -xzf SYIA_ORIG_MODEL.tar.gz
 ```
 
+* We have also realeased model for Fill Factor [here](https://www.dropbox.com/scl/fo/w0ipykwubvkvbrcimmewr/AEqAIFC4eo4GGfqhnSJ3l-0?rlkey=ysatviwlsjm95hjpa00tzd3c9&e=1&st=l7wsyz8x&dl=0). (https://www.dropbox.com/scl/fo/w0ipykwubvkvbrcimmewr/AEqAIFC4eo4GGfqhnSJ3l-0?rlkey=ysatviwlsjm95hjpa00tzd3c9&e=1&st=l7wsyz8x&dl=0) 
+To use it, place the 'epoch=100.checkpoint.pth' file in folder './Orig_Trained_Models/spInv_Stray_Light_Fill_Factor' and pull the latest version of our code for necessary normalization parameters.<br>
+
+
+
 ## Download input data
 * SuperSynthIA runs on the hmi.S_720s data series (level 1p IQUV data averaged at a cadence of 12 minutes) as inputs. One can download such data from [JSOC](http://jsoc.stanford.edu/ajax/exportdata.html). Here is an example request: `hmi.S_720s[2024.05.07_00:48:00-2024.05.20_23:48:00@1h]`
 We also provide a small dataset for your convenience to test the code. If you run the following code, you can find the dataset in [./SMALL_DATASET](./SMALL_DATASET)
