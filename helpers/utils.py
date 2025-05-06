@@ -1,8 +1,10 @@
-import os, re, threading
+import os, re, threading, shutil
 import numpy as np
 import zarr
 import torch
 import scipy.ndimage
+
+import astropy.io.fits as fits 
 
 def isLocked(p):
     if os.path.exists(p):
@@ -232,3 +234,116 @@ def extract_timestamp_from_fits(filename):
         return timestamp
     else:
         raise ValueError("Timestamp not found in the filename")
+
+
+
+#region -------------------------------- Fits File Handling --------------------------------
+def get_data_from_fits(fits_path):
+    # !!! Loads predictions saved as fits, not for IQUV
+    # Should output float value
+    
+    # 1) Open FITS and grab extension 1
+    hdul = fits.open(fits_path)           # returns an HDUList               
+    hdu  = hdul[1]                         # Primary=0, first ImageHDU=1    
+
+    # 2) Extract raw data and header
+    raw_data = hdu.data                    # NumPy int32 array             
+    hdr      = hdu.header                  # FITS header                    
+
+    # 3) Read scaling keywords (with defaults)
+    bscale = hdr.get('BSCALE', 1.0)        # scale factor                    
+    bzero  = hdr.get('BZERO', 0.0)         # offset                           
+    blank  = hdr.get('BLANK', None)        # blank pixel indicator      
+    breakpoint()
+    
+    # 4) Convert blanked pixels to NaN
+    if blank is not None:
+        raw_data[raw_data == blank] = np.nan  # mark undefined pixels as NaN    
+    
+    # 5) Apply linear transform: physical = raw * BSCALE + BZERO
+    data = raw_data.astype(np.float32) * bscale + bzero
+
+    # 6) Cleanup and return
+    hdul.close()                           # free file resources           
+    return data
+
+
+def get_IQUV_from_fits(fits_dir):
+    # !!! Loads IQUV & mask & uncertainty from fits, not for predictions like Br, Bp, ...
+    # Should output float value
+    arr = fits.open(fits_dir)[1].data
+    return arr
+
+
+
+
+
+def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, compress=True, whether_flip=True):
+    short_name = y_name.split('_', 1)[1]
+    parts = file_name.split(".")
+    short_name_partition = short_name + partition
+    parts[-3:] = [f'{short_name_partition}', f'fits']
+    file_name = ".".join(parts)
+    file_name = file_name.replace("S_720s", 'SuperSynthIA')
+    save_DIR = os.path.join(target, file_name)
+    
+    # Flip the data
+    if partition == '_orig_logit':
+        imageData = imageData[:, ::-1, ::-1]
+    elif y_name == '_mask' or whether_flip == False:
+        imageData = imageData
+    elif y_name == 'spDisambig_Bt' and partition != '_err':
+        imageData = -imageData[::-1, ::-1]
+    else:
+        imageData = imageData[::-1, ::-1]
+        
+    # Scale data according to JSOC standard
+    # 1) Determine scaling parameters
+    if y_name == 'spInv_Stray_Light_Fill_Factor':
+        bscale = 0.0001
+    else:
+        bscale = 0.01
+    bzero = 0.0
+    blank = np.iinfo(np.int32).min  # −2147483648
+    
+    # 2) Scale and convert to int32, mapping NaNs to BLANK
+    scaled = np.round((imageData - bzero) / bscale).astype(np.int32)
+    scaled[np.isnan(imageData)] = blank
+    imageData_int = scaled
+
+    # 3) Prepare header with scaling keywords
+    header0 = (headerSrc[0].header).copy()
+    for key in ('BZERO','BSCALE','BLANK'):
+        header0.pop(key, None)
+    
+    
+    primary = fits.PrimaryHDU(data=None, header=None)
+    image_hdu = fits.ImageHDU(data=imageData_int, header=header0)
+    hdul = fits.HDUList([primary, image_hdu])
+    
+    hdr = hdul[1].header
+    hdr['BZERO']  = (bzero, 'Real data offset')              
+    hdr['BSCALE'] = (bscale, 'Real-to-int scale factor')
+    hdr['BLANK']  = (int(blank), 'Undefined pixel value')
+
+    uncompressed_save_DIR = save_DIR.replace('.fits', '_uncompressed.fits')
+    hdul.writeto(uncompressed_save_DIR, overwrite=True)
+    
+    if compress:
+        # Check if fpack is available
+        if shutil.which('fpack') is not None:
+            # Use fpack with RICE compression to compress the FITS file
+            t_command = " ".join(['fpack', '-O', save_DIR, '-q', '-0.01', uncompressed_save_DIR])
+            os.system(t_command)
+            # Remove the uncompressed file after compression
+            os.remove(uncompressed_save_DIR)
+        else:
+            print(f'fpack not found. Saving uncompressed file: {uncompressed_save_DIR}')
+    else:
+        # Rename the uncompressed file to the final name
+        os.rename(uncompressed_save_DIR, save_DIR)
+
+
+
+
+#endregion ---------------------------------------------------------------------------------

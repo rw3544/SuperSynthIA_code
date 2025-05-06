@@ -5,7 +5,7 @@ import astropy.io.fits as fits
 from helpers.utils import isLocked
 import helpers.disambiguation_utils as disambiguation
 import concurrent.futures
-from helpers.full_disk_utils import pack_to_fits
+from helpers.utils import pack_to_fits, get_data_from_fits
 
 
 def disambig_packer(BASE_PRED_DIR, IQUV_DIR, SAVE_DIR, parallel=False, max_workers = 8):
@@ -55,14 +55,10 @@ def disambig_sample(ts, fieldFiles, inclinationFiles, azimuthDisFiles, I0Files, 
     azimuthDisFn = [fn for fn in azimuthDisFiles if fn.split(".")[2] == ts][0]
     I0Fn = [fn for fn in I0Files if fn.split(".")[2] == ts][0]
 
-    field = (fits.open(os.path.join(fieldBase, fieldFn)))[1].data
-    inclination = (fits.open(os.path.join(inclinationBase, inclinationFn)))[1].data
-    azimuthDisambig = (fits.open(os.path.join(azimuthDisBase, azimuthDisFn)))[1].data
+    field = get_data_from_fits(os.path.join(fieldBase, fieldFn))
+    inclination = get_data_from_fits(os.path.join(inclinationBase, inclinationFn))
+    azimuthDisambig = get_data_from_fits(os.path.join(azimuthDisBase, azimuthDisFn))
     azimuthDisambig = azimuthDisambig+90
-    #field = (fits.open(os.path.join(fieldBase, fieldFn)))[1].data[::-1,::-1]
-    #inclination = (fits.open(os.path.join(inclinationBase, inclinationFn)))[1].data[::-1,::-1]
-    #azimuthDisambig = (fits.open(os.path.join(azimuthDisBase, azimuthDisFn)))[1].data[::-1,::-1]
-    #azimuthDisambig = azimuthDisambig+90 #account for the hmi stuff
     
 
     fitsForHeader = fits.open(os.path.join(I0Base, I0Fn))

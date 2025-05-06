@@ -27,7 +27,7 @@
     "save_orig_logit": false,
 
     "_comment_use_parallel": "Whether to use parallel processing.",
-    "use_parallel": true,
+    "use_parallel": false,
 
     "_comment_max_parallel_workers": "Set only if run in parallel, suggest to be # of cpus of your machine, turn down if have memory issue",
     "max_parallel_workers": 8,

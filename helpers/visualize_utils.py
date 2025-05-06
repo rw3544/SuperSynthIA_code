@@ -3,6 +3,7 @@ import numpy as np
 import os
 import astropy.io.fits as fits
 import concurrent.futures
+from helpers.utils import get_data_from_fits, get_IQUV_from_fits
 
 
 
@@ -44,8 +45,7 @@ def signed_sqrt(x):
 #   Note: for Br/Bp/Bt, it will by default visualize them in signed sqrt scale for better contrast
 def process_vis_file(i, pred_file_list, err_file_list, dir_path, save_path, y_name):
     file_path = os.path.join(dir_path, pred_file_list[i])
-    arr = fits.open(file_path)
-    arr = arr[1].data
+    arr = get_data_from_fits(file_path)
     
     # !!! Flip arr
     #arr = np.flip(arr, axis=1)
@@ -61,8 +61,7 @@ def process_vis_file(i, pred_file_list, err_file_list, dir_path, save_path, y_na
     
     if err_file_list:
         file_path = os.path.join(dir_path, err_file_list[i])
-        arr = fits.open(file_path)
-        arr = arr[1].data
+        arr = get_IQUV_from_fits(file_path)
 
         img_name = pred_file_list[i].replace('.fits', '.uncertainty.png')
         plt.imsave(os.path.join(save_path, img_name), arr, cmap='hot', vmin=0, vmax=2000)
@@ -92,6 +91,10 @@ def fits_vis_packer(output_name_list, dir_base_path, save_base_path, every_n = 1
         else:
             # Fall back to the number of CPUs on the local machine
             max_workers = os.cpu_count()
+        
+        # TODO: delete this line after testing
+        process_vis_file(0, pred_file_list, err_file_list, dir_path, save_path, y_name)
+        
         with concurrent.futures.ProcessPoolExecutor(max_workers = max_workers) as executor:
             n = every_n
             executor.map(process_vis_file, range(0, len(pred_file_list), n), [pred_file_list]*len(range(0, len(pred_file_list), n)),

@@ -8,6 +8,7 @@ from helpers.model import *
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from helpers.utils import *
+from helpers.utils import get_data_from_fits, pack_to_fits, get_IQUV_from_fits
 import astropy.io.fits as fits 
 import astropy.io.fits
 import sunpy.map
@@ -34,87 +35,6 @@ def getMetaData(HMIMap):
 
     return np.dstack([tx[:,:,None], ty[:,:,None], mask[:,:,None]]), np.dstack([txs[:,:,None], tys[:,:,None]]), mask
 
-'''
-# target: Save directory
-# file_name: input fits file name
-# headerSrc: fits header
-# !!! Takes one rotation for incoming data (combing fits file already rotate once)
-def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, compress=True, whether_flip = True):
-    short_name = y_name.split('_', 1)[1]
-    parts = file_name.split(".")
-    short_name_partition = short_name + partition
-    parts[-3:] = [f'{short_name_partition}', f'fits']
-    file_name = ".".join(parts)
-    file_name = file_name.replace("S_720s", 'SuperSynthIA')
-    save_DIR = os.path.join(target, file_name)
-    # Flip the data
-    if partition == '_orig_logit':
-        imageData = imageData[:, ::-1, ::-1]
-    elif y_name == '_mask' or whether_flip == False:
-        imageData = imageData
-    elif y_name == 'spDisambig_Bt' and partition != '_err':
-        imageData = -imageData[::-1,::-1]
-    else:
-        imageData = imageData[::-1,::-1]
-    header0 = (headerSrc[0].header).copy()
-
-    data = [fits.PrimaryHDU(data=None, header=None)]
-    if compress:
-        data += [fits.CompImageHDU(data=imageData, header=header0, compression_type='RICE_1', tile_shape=(64, 64), quantize_level=-0.01)]
-    else:
-        data += [fits.ImageHDU(data=imageData, header=header0)]
-
-    
-    hdul = fits.HDUList(data)
-    hdul.writeto(save_DIR, overwrite=True)
-
-'''
-
-def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, compress=True, whether_flip=True):
-    short_name = y_name.split('_', 1)[1]
-    parts = file_name.split(".")
-    short_name_partition = short_name + partition
-    parts[-3:] = [f'{short_name_partition}', f'fits']
-    file_name = ".".join(parts)
-    file_name = file_name.replace("S_720s", 'SuperSynthIA')
-    save_DIR = os.path.join(target, file_name)
-    
-    # Flip the data
-    if partition == '_orig_logit':
-        imageData = imageData[:, ::-1, ::-1]
-    elif y_name == '_mask' or whether_flip == False:
-        imageData = imageData
-    elif y_name == 'spDisambig_Bt' and partition != '_err':
-        imageData = -imageData[::-1, ::-1]
-    else:
-        imageData = imageData[::-1, ::-1]
-    
-    header0 = (headerSrc[0].header).copy()
-    
-    data = [fits.PrimaryHDU(data=None, header=None)]
-    data += [fits.ImageHDU(data=imageData, header=header0)]
-    
-    hdul = fits.HDUList(data)
-    uncompressed_save_DIR = save_DIR.replace('.fits', '_uncompressed.fits')
-    hdul.writeto(uncompressed_save_DIR, overwrite=True)
-    
-    if compress:
-        # Check if fpack is available
-        if shutil.which('fpack') is not None:
-            # Use fpack with RICE compression to compress the FITS file
-            t_command = " ".join(['fpack', '-O', save_DIR, '-q', '-0.01', uncompressed_save_DIR])
-            os.system(t_command)
-            # Remove the uncompressed file after compression
-            os.remove(uncompressed_save_DIR)
-        else:
-            print(f'fpack not found. Saving uncompressed file: {uncompressed_save_DIR}')
-    else:
-        # Rename the uncompressed file to the final name
-        os.rename(uncompressed_save_DIR, save_DIR)
-
-
-# For 80 days of data
-
 
 from helpers.pred_utils import *
 
@@ -137,7 +57,7 @@ def nnInterpNaN(X):
 def concat_full_disk(DATA_DIR:str, filename):
     foldername = os.path.join(DATA_DIR, filename)
     I0_DIR = foldername.replace("XX", "I0")
-    I0_arr = (astropy.io.fits.open(I0_DIR)[1].data)[::-1, ::-1]
+    I0_arr = (get_IQUV_from_fits(I0_DIR))[::-1, ::-1]
     hmi_Map = sunpy.map.Map(I0_DIR)
     trash1, trash2, mask = getMetaData(hmi_Map)
     I0_DIR = None
@@ -155,28 +75,28 @@ def concat_full_disk(DATA_DIR:str, filename):
     # For I
     for i in range(6):
         TMP_I_DIR = foldername.replace("XX", f"I{i}")
-        arr = (astropy.io.fits.open(TMP_I_DIR)[1].data)[::-1, ::-1]
+        arr = (get_IQUV_from_fits(TMP_I_DIR))[::-1, ::-1]
         X[:,layer,:,:] = arr
         layer += 1
     
     # For Q
     for i in range(6):
         TMP_I_DIR = foldername.replace("XX", f"Q{i}")
-        arr = (astropy.io.fits.open(TMP_I_DIR)[1].data)[::-1, ::-1]
+        arr = (get_IQUV_from_fits(TMP_I_DIR))[::-1, ::-1]
         X[:,layer,:,:] = arr
         layer += 1
     
     # For U
     for i in range(6):
         TMP_I_DIR = foldername.replace("XX", f"U{i}")
-        arr = (astropy.io.fits.open(TMP_I_DIR)[1].data)[::-1, ::-1]
+        arr = (get_IQUV_from_fits(TMP_I_DIR))[::-1, ::-1]
         X[:,layer,:,:] = arr
         layer += 1
     
     # For V
     for i in range(6):
         TMP_I_DIR = foldername.replace("XX", f"V{i}")
-        arr = (astropy.io.fits.open(TMP_I_DIR)[1].data)[::-1, ::-1]
+        arr = (get_IQUV_from_fits(TMP_I_DIR))[::-1, ::-1]
         X[:,layer,:,:] = arr
         layer += 1
     
@@ -362,6 +282,11 @@ def inference_sample_full_disk_80_days(
                 yp_orig_prob[-1] = np.concatenate(yp_orig_prob[-1], axis=2)
         Yp = np.vstack(Yp)
         Yp = Yp.astype(np.float32)
+        
+        # Bring back the nans
+        mask = mask.squeeze().cpu().numpy()
+        Yp[~mask] = np.nan
+        
         if save_std == True:
             yp_std = (np.vstack(yp_std)).astype(np.float32)
         if save_CI == True:
@@ -559,9 +484,6 @@ def uncertainty_mask_generation(array):
 
     return mask
 
-def get_data_from_fits(fits_dir):
-    arr = fits.open(fits_dir)[1].data
-    return arr
 
 
 def extract_date_time(file_name):
@@ -660,8 +582,8 @@ def continuum_process_file(file_name, Bp_PRED_DIR, Br_PRED_DIR, Bt_PRED_DIR, IQU
     
     I0_file_DIR = IQUV_base_file_name.replace("XX", f"{IQUV_DIGIT}.I0")
     I5_file_DIR = IQUV_base_file_name.replace("XX", f"{IQUV_DIGIT}.I5")
-    I0 = get_data_from_fits(os.path.join(IQUV_DATA_DIR, I0_file_DIR))
-    I5 = get_data_from_fits(os.path.join(IQUV_DATA_DIR, I5_file_DIR))
+    I0 = get_IQUV_from_fits(os.path.join(IQUV_DATA_DIR, I0_file_DIR))
+    I5 = get_IQUV_from_fits(os.path.join(IQUV_DATA_DIR, I5_file_DIR))
     I_avg = (I0 + I5) / 2
 
     mu = continuum_calculate_mu(os.path.join(IQUV_DATA_DIR, I0_file_DIR))
@@ -829,8 +751,8 @@ def Interpolation_samp_parallel(MODE, Br_PRED_DIR, MASK_SAVE_DIR, file_name, SAV
     #print(file_name)
     Br_fits = fits.open(os.path.join(Br_PRED_DIR, file_name.replace("XX", "Br")))
     
-    Br = Br_fits[1].data
-    mask = get_data_from_fits(os.path.join(MASK_SAVE_DIR, file_name.replace("XX", "mask")))
+    Br = get_data_from_fits(os.path.join(Br_PRED_DIR, file_name.replace("XX", "Br")))
+    mask = get_IQUV_from_fits(os.path.join(MASK_SAVE_DIR, file_name.replace("XX", "mask")))
     
     dataFix = None
     
@@ -844,8 +766,11 @@ def Interpolation_samp_parallel(MODE, Br_PRED_DIR, MASK_SAVE_DIR, file_name, SAV
         dataFix = quickInterpolate(Br, mask)
         
     if MODE == 'Overwrite':
-        Br_fits[1].data = dataFix
-        Br_fits.writeto(os.path.join(Br_PRED_DIR, file_name.replace("XX", "Br")), overwrite=True)
+        #TODO: del original file Save using pack_to_fits
+        #Br_fits[1].data = dataFix
+        #Br_fits.writeto(os.path.join(Br_PRED_DIR, file_name.replace("XX", "Br")), overwrite=True)
+        os.remove(os.path.join(Br_PRED_DIR, file_name.replace("XX", "Br")))
+        pack_to_fits(Br_PRED_DIR, file_name_to_pack_fits(file_name), dataFix, Br_fits, 'spDisambig_Br', '', whether_flip = False)
     else:
         pack_to_fits(SAVE_DIR, file_name_to_pack_fits(file_name), dataFix, Br_fits, 'spDisambig_Br', '', whether_flip = False)
     

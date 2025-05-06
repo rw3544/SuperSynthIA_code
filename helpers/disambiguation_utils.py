@@ -24,6 +24,7 @@ from sunpy.map import Map
 from datetime import datetime as dt_obj
 import pdb
 #import drms
+from helpers.utils import get_data_from_fits
 
 __all__ = ['Basic','CoordinateTransform']
 __author__ = 'Monica Bobra'
@@ -123,6 +124,8 @@ class Basic(object):
         return azimuth
 '''
 
+# The way this class load prediction fits file have issue and not currently working with JSOC format
+# Need to let it work with get_data_from_fits from helpers.utils
 class CoordinateTransform(object):
     """
     Class for coordinate transformations.

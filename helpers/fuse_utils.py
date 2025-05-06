@@ -5,7 +5,7 @@ import astropy.io.fits as fits
 import multiprocessing
 import numpy as np
 import os
-from helpers.full_disk_utils import pack_to_fits
+from helpers.utils import pack_to_fits, get_data_from_fits
 
 
 def downBin(X,k):
@@ -40,13 +40,13 @@ def handle(tsUse, synthIAOut):
     YBtDFn = [fn for fn in os.listdir(synthIAOut["BtD"]) if fn.find(tsUse) != -1][0]
 
 
-    YBr = (fits.open(os.path.join(synthIAOut["Br"],YBrFn)))[1].data
-    YBp = (fits.open(os.path.join(synthIAOut["Bp"],YBpFn)))[1].data
-    YBt = (fits.open(os.path.join(synthIAOut["Bt"],YBtFn)))[1].data
-
-    YBrD = (fits.open(os.path.join(synthIAOut["BrD"],YBrDFn)))[1].data
-    YBpD = (fits.open(os.path.join(synthIAOut["BpD"],YBpDFn)))[1].data
-    YBtD = (fits.open(os.path.join(synthIAOut["BtD"],YBtDFn)))[1].data
+    YBr = get_data_from_fits(os.path.join(synthIAOut["Br"],YBrFn))
+    YBp = get_data_from_fits(os.path.join(synthIAOut["Bp"],YBpFn))
+    YBt = get_data_from_fits(os.path.join(synthIAOut["Bt"],YBtFn))
+    
+    YBrD = get_data_from_fits(os.path.join(synthIAOut["BrD"],YBrDFn))
+    YBpD = get_data_from_fits(os.path.join(synthIAOut["BpD"],YBpDFn))
+    YBtD = get_data_from_fits(os.path.join(synthIAOut["BtD"],YBtDFn))
     
 
     #YaBD = (YBrD**2+YBpD**2+YBtD**2)**0.5
