@@ -289,9 +289,13 @@ def inference_sample_full_disk_80_days(
         
         if save_std == True:
             yp_std = (np.vstack(yp_std)).astype(np.float32)
+            yp_std[~mask] = np.nan
         if save_CI == True:
             yp_low_CI = (np.vstack(yp_low_CI)).astype(np.float32)
             yp_high_CI = (np.vstack(yp_high_CI)).astype(np.float32)
+            
+            yp_low_CI[~mask] = np.nan
+            yp_high_CI[~mask] = np.nan
         if save_orig_logit == True:
             yp_orig_prob = (np.concatenate(yp_orig_prob, axis=1)).astype(np.float32)
         return Yp, yp_low_CI, yp_high_CI, yp_std, yp_orig_prob

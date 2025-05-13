@@ -239,32 +239,7 @@ def extract_timestamp_from_fits(filename):
 
 #region -------------------------------- Fits File Handling --------------------------------
 def get_data_from_fits(fits_path):
-    # !!! Loads predictions saved as fits, not for IQUV
-    # Should output float value
-    
-    # 1) Open FITS and grab extension 1
-    hdul = fits.open(fits_path)           # returns an HDUList               
-    hdu  = hdul[1]                         # Primary=0, first ImageHDU=1    
-
-    # 2) Extract raw data and header
-    raw_data = hdu.data                    # NumPy int32 array             
-    hdr      = hdu.header                  # FITS header                    
-
-    # 3) Read scaling keywords (with defaults)
-    bscale = hdr.get('BSCALE', 1.0)        # scale factor                    
-    bzero  = hdr.get('BZERO', 0.0)         # offset                           
-    blank  = hdr.get('BLANK', None)        # blank pixel indicator      
-    breakpoint()
-    
-    # 4) Convert blanked pixels to NaN
-    if blank is not None:
-        raw_data[raw_data == blank] = np.nan  # mark undefined pixels as NaN    
-    
-    # 5) Apply linear transform: physical = raw * BSCALE + BZERO
-    data = raw_data.astype(np.float32) * bscale + bzero
-
-    # 6) Cleanup and return
-    hdul.close()                           # free file resources           
+    data = fits.open(fits_path)[1].data
     return data
 
 
@@ -307,8 +282,13 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     blank = np.iinfo(np.int32).min  # −2147483648
     
     # 2) Scale and convert to int32, mapping NaNs to BLANK
-    scaled = np.round((imageData - bzero) / bscale).astype(np.int32)
-    scaled[np.isnan(imageData)] = blank
+    # compute float‐scaled values (still NaN where imageData is NaN)
+    scaled_raw = np.round((imageData - bzero) / bscale)
+    
+    # build final int array, filling blank where imageData was NaN
+    scaled = np.where(np.isnan(imageData), blank, scaled_raw) \
+                .astype(np.int32)
+    
     imageData_int = scaled
 
     # 3) Prepare header with scaling keywords

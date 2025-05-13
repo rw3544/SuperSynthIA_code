@@ -6,7 +6,7 @@
     "GLOBAL_DEVICE": "cuda",
 
     "_comment_output_name_list": "Choose from ['spDisambig_Bp', 'spDisambig_Br', 'spDisambig_Bt', 'spDisambig_Field_Azimuth_Disamb', 'spInv_aB', 'spInv_Field_Azimuth', 'spInv_Field_Inclination', 'spInv_Stray_Light_Fill_Factor']",
-    "output_name_list": ["spDisambig_Bp", "spDisambig_Br", "spDisambig_Bt", "spInv_aB", "spInv_Field_Inclination", "spDisambig_Field_Azimuth_Disamb"],
+    "output_name_list": ["spInv_Stray_Light_Fill_Factor", "spDisambig_Bp", "spDisambig_Br", "spDisambig_Bt", "spInv_aB", "spInv_Field_Inclination", "spDisambig_Field_Azimuth_Disamb"],
 
     "_comment_IQUV_DATA_DIR": "Directory containing the IQUV data.",
     "IQUV_DATA_DIR": "./SMALL_DATASET",
@@ -27,11 +27,11 @@
     "save_orig_logit": false,
 
     "_comment_use_parallel": "Whether to use parallel processing.",
-    "use_parallel": false,
+    "use_parallel": true,
 
     "_comment_max_parallel_workers": "Set only if run in parallel, suggest to be # of cpus of your machine, turn down if have memory issue",
     "max_parallel_workers": 8,
 
     "_comment_postprocessing_mode": "Choose from ['none', 'generate_mask', 'fix_hole_overwrite', 'fix_hole_save_to_new'], for producing aB/Inclination/Azimuth only, please set to none to avoid any issue",
-    "postprocessing_mode": "none"
+    "postprocessing_mode": "fix_hole_overwrite"
 }
