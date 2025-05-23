@@ -3,4 +3,9 @@ SMALL_DATASET/
 helpers/__pycache__/
 test/
 *.txt
+*.png
 configs/pred.json
+
+SMALL_DATASET_JSOC_FORMAT/
+rename_file.py
+test_dbug.py

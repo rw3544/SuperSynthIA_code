@@ -322,6 +322,17 @@ def process_file(fits_file_name, DATA_DIR, SAVE_PATH, model, X_norm_arr, y_norm_
             reproducible, fixed_noise
         )
         
+        #region ------------------------- Info Map -------------------------
+        # Get info map (can move further into inference_sample_full_disk_80_days if needed)
+        # !!! Need to flip to co-register with pred because input X is flipped
+        foldername = os.path.join(DATA_DIR, fits_file_name)
+        I0_DIR = foldername.replace("XX", "I0")
+        I0_header = fits.open(I0_DIR)[1].header
+        info_map = init_info_map(I0_header, limb_width=100)
+        info_map = info_map[::-1, ::-1]
+        
+        #endregion ------------------------- Info Map -------------------------
+        
         utils_make_dir(SAVE_PATH)
         if not save_as_FITS:
             if y_name == 'spDisambig_Bt':
@@ -351,7 +362,8 @@ def process_file(fits_file_name, DATA_DIR, SAVE_PATH, model, X_norm_arr, y_norm_
                 TMP_orig_prob_SAVE_PATH = os.path.join(SAVE_PATH, fits_file_name.replace("XX.fits", "_orig_prob.npy"))
                 np.save(TMP_orig_prob_SAVE_PATH, orig_prob)
         else:
-            pack_to_fits(SAVE_PATH, fits_file_name, pred, fits.open(os.path.join(DATA_DIR, fits_file_name.replace("XX.fits", "I0.fits"))), y_name, '') 
+            pack_to_fits(SAVE_PATH, fits_file_name, pred, fits.open(os.path.join(DATA_DIR, fits_file_name.replace("XX.fits", "I0.fits"))), y_name, '', 
+                         info_map = info_map) 
             if save_CI:
                 pack_to_fits(SAVE_PATH, fits_file_name, low_CI, fits.open(os.path.join(DATA_DIR, fits_file_name.replace("XX.fits", "I0.fits"))), y_name, '_low_CI') 
                 pack_to_fits(SAVE_PATH, fits_file_name, high_CI, fits.open(os.path.join(DATA_DIR, fits_file_name.replace("XX.fits", "I0.fits"))), y_name, '_high_CI')
@@ -490,17 +502,18 @@ def uncertainty_mask_generation(array):
 
 
 
-def extract_date_time(file_name):
-    parts = file_name.split('.')
-    date_time_str = parts[2]
-    # Exclude the _TAI
-    date_time_str = date_time_str[:-4]
-    return date_time_str
 
 # Turn '20160513_204800' into dt
 def date_time_to_dt(date_time_str):
-    dt = datetime(year=int(date_time_str[:4]), month=int(date_time_str[4:6]), day=int(date_time_str[6:8]), hour=int(date_time_str[9:11]), minute=int(date_time_str[11:13]))
-    return dt
+    if '.' in date_time_str and ':' in date_time_str:  # New format: YYYY.MM.DD_HH:MM:SS
+        date_part, time_part = date_time_str.split('_')
+        year, month, day = date_part.split('.')
+        hour, minute, second = time_part.split(':')
+        return datetime(year=int(year), month=int(month), day=int(day), 
+                        hour=int(hour), minute=int(minute), second=int(second))
+    else:  # Old format: YYYYMMDD_HHMMSS
+        dt = datetime(year=int(date_time_str[:4]), month=int(date_time_str[4:6]), day=int(date_time_str[6:8]), hour=int(date_time_str[9:11]), minute=int(date_time_str[11:13]))
+        return dt
 
 # Given an array, calculate the average of the center 1024x1024
 def calculate_I_center(arr):
@@ -523,8 +536,8 @@ def continuum_calculate_mu(fits_src, ):
     # Load it into a sunpy map
     HMIMap = sunpy.map.Map(fits_src)
     
-    date_time_str = extract_date_time(os.path.basename(fits_src))
-    dt = date_time_to_dt(date_time_str)
+    #date_time_str = extract_timestamp_from_fits(os.path.basename(fits_src))
+    #dt = date_time_to_dt(date_time_str)
 
     # Create a meshgrid of the X / Y  
     H, W = HMIMap.data.shape[0], HMIMap.data.shape[1]
@@ -554,8 +567,10 @@ def continuum_calculate_mu(fits_src, ):
     '''
     
     # full formula
-    b0 = sunpy.coordinates.sun.B0(dt) # get b0
-    b0 = b0.deg # strip the unit tag
+    # Use b0 from fits header
+    b0 = fits.open(fits_src)[1].header['CRLT_OBS']
+    #b0 = sunpy.coordinates.sun.B0(dt) # get b0
+    #b0 = b0.deg # strip the unit tag
     mu3 = np.sin(np.radians(b0))*np.sin(np.radians(tys)) + np.cos(np.radians(b0))*np.cos(np.radians(tys))*np.cos(np.radians(txs))
     return mu3
 
@@ -758,6 +773,8 @@ def Interpolation_samp_parallel(MODE, Br_PRED_DIR, MASK_SAVE_DIR, file_name, SAV
     Br = get_data_from_fits(os.path.join(Br_PRED_DIR, file_name.replace("XX", "Br")))
     mask = get_IQUV_from_fits(os.path.join(MASK_SAVE_DIR, file_name.replace("XX", "mask")))
     
+    info_map = get_IQUV_from_fits(os.path.join(Br_PRED_DIR, file_name.replace("XX", "confid_map")))
+    
     dataFix = None
     
     # If there are no holes, skip
@@ -769,24 +786,31 @@ def Interpolation_samp_parallel(MODE, Br_PRED_DIR, MASK_SAVE_DIR, file_name, SAV
         mask = scipy.ndimage.binary_dilation(mask, np.ones((3, 3)))
         dataFix = quickInterpolate(Br, mask)
         
+        # info_map 
+        # Pixel in the "hole" or MASK that was replaced by interpolation — assign 1 
+        info_map[mask] = 1
+        
     if MODE == 'Overwrite':
         #TODO: del original file Save using pack_to_fits
         #Br_fits[1].data = dataFix
         #Br_fits.writeto(os.path.join(Br_PRED_DIR, file_name.replace("XX", "Br")), overwrite=True)
         os.remove(os.path.join(Br_PRED_DIR, file_name.replace("XX", "Br")))
-        pack_to_fits(Br_PRED_DIR, file_name_to_pack_fits(file_name), dataFix, Br_fits, 'spDisambig_Br', '', whether_flip = False)
+        pack_to_fits(Br_PRED_DIR, file_name_to_pack_fits(file_name), dataFix, Br_fits, 'spDisambig_Br', '', whether_flip = False,
+                     info_map = info_map)
     else:
-        pack_to_fits(SAVE_DIR, file_name_to_pack_fits(file_name), dataFix, Br_fits, 'spDisambig_Br', '', whether_flip = False)
+        pack_to_fits(SAVE_DIR, file_name_to_pack_fits(file_name), dataFix, Br_fits, 'spDisambig_Br', '', whether_flip = False,
+                     info_map = info_map)
     
     # Log the processed file
     with open(log_file, 'a') as log:
         log.write(f"{file_name}\n")    
     
+    '''
     if True:
         if not os.path.exists(os.path.join(MASK_SAVE_DIR, 'hole_fix')):
             os.makedirs(os.path.join(MASK_SAVE_DIR, 'hole_fix'), exist_ok=True)
         #plt.imsave(os.path.join(MASK_SAVE_DIR, 'hole_fix', file_name.replace(".fits", "_dilated_mask.png")), mask)    
         #plt.imsave(os.path.join(MASK_SAVE_DIR, 'hole_fix', file_name.replace(".fits", "_data.png")), ssqrt(Br), vmin=-54, vmax=54, cmap='PuOr')
         #plt.imsave(os.path.join(MASK_SAVE_DIR, 'hole_fix', file_name.replace(".fits", "_dataFix.png")), ssqrt(dataFix), vmin=-54, vmax=54, cmap='PuOr')
-    
+    '''
     

@@ -3,6 +3,7 @@ import numpy as np
 import zarr
 import torch
 import scipy.ndimage
+from datetime import datetime
 
 import astropy.io.fits as fits 
 
@@ -222,19 +223,28 @@ def triangular_distribution(arr_shape, device, seed=None):
 
 
 def extract_timestamp_from_fits(filename):
-    # Define the regex pattern to match the date and time in the filename
-    pattern = r'\d{8}_\d{6}'
-    
-    # Search for the pattern in the filename
-    match = re.search(pattern, filename)
-    
-    if match:
-        # Extract the matched string
-        timestamp = match.group(0)
-        return timestamp
-    else:
+    # match either:
+    #  1) old style: 20160513_204800
+    #  2) new style: 2025.05.01_00:00:00
+    pattern = r'(\d{8}_\d{6}|\d{4}\.\d{2}\.\d{2}_\d{2}:\d{2}:\d{2})'
+    m = re.search(pattern, filename)
+    if not m:
         raise ValueError("Timestamp not found in the filename")
+    ts = m.group(0)
+    return ts
 
+    '''
+    # if you just want the raw string, return ts
+    # return ts
+
+    # …or convert to a datetime object:
+    if '.' in ts:
+        # new style
+        return datetime.strptime(ts, '%Y.%m.%d_%H:%M:%S')
+    else:
+        # old style
+        return datetime.strptime(ts, '%Y%m%d_%H%M%S')
+    '''
 
 
 #region -------------------------------- Fits File Handling --------------------------------
@@ -250,10 +260,75 @@ def get_IQUV_from_fits(fits_dir):
     return arr
 
 
+def init_info_map(header, limb_width=100):
+    """
+    Create a naive info_map based solely on an on-disk mask.
+    Info about hole will be updated later.
+
+    Parameters
+    ----------
+    header : astropy.io.fits.Header
+        The FITS header containing CRPIX1/2, and either RSUN_REF or RSUN_OBS+CDELT1.
+    limb_width : int, optional
+        Number of pixels inward from the limb to tag as 'near-limb' (default=100).
+
+    Returns
+    -------
+    info_map : 2D uint8 array
+        0   = good (interior pixels more than `limb_width` from edge)
+        2   = near-limb (within `limb_width` pixels of the edge: Rsun - limb_width <= r <= Rsun)
+        255 = off-disk (outside the mask)
+        
+        To be updated later in postprocessing:
+        1   = Pixel in the "hole" or MASK that was replaced by interpolation
+    """
+    # image shape from header
+    nx = header['NAXIS1']
+    ny = header['NAXIS2']
+
+    # disk center (FITS uses 1-based coords)
+    cx = header['CRPIX1']
+    cy = header['CRPIX2']
+
+    # solar radius in pixels
+    # RSUN_OBS in arcsec, CDELT1 in arcsec/pix
+    r_sun = header['RSUN_OBS'] / header['CDELT1']
+
+    # build radius array
+    y_idx, x_idx = np.indices((ny, nx))
+    r = np.hypot((x_idx + 1) - cx, (y_idx + 1) - cy)
+
+    # init everything as “good”
+    info_map = np.zeros((ny, nx), dtype=np.uint8)
+
+    # off‐limb → 255
+    info_map[r > r_sun] = 255
+
+    # near‐limb → 2
+    near = (r >= (r_sun - limb_width)) & (r <= r_sun)
+    info_map[near] = 2
+
+    return info_map
 
 
 
-def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, compress=True, whether_flip=True):
+
+def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, compress=True, whether_flip=True,
+                 info_map=None):
+    """
+    Save image data to a FITS file with appropriate scaling, and save a corresponding confidence map
+    
+    Args:
+        target: Target directory
+        file_name: Name of the file
+        imageData: The image data to save
+        headerSrc: Source header
+        y_name: Name of the data product
+        partition: Partition string to append to filename
+        compress: Whether to compress the file
+        whether_flip: Whether to flip the data
+        mask: Optional mask indicating interpolated areas
+    """
     short_name = y_name.split('_', 1)[1]
     parts = file_name.split(".")
     short_name_partition = short_name + partition
@@ -271,6 +346,17 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
         imageData = -imageData[::-1, ::-1]
     else:
         imageData = imageData[::-1, ::-1]
+        
+    # Flip the info_map
+    #  Flip according to whether_flip
+    if info_map is not None:
+        # info_map can only be present for saving predictions
+        if partition != '':
+            raise ValueError("info_map should only be present for saving predictions")
+        if whether_flip:
+            info_map = info_map[::-1, ::-1]
+        else:
+            info_map = info_map
         
     # Scale data according to JSOC standard
     # 1) Determine scaling parameters
@@ -296,6 +382,14 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     for key in ('BZERO','BSCALE','BLANK'):
         header0.pop(key, None)
     
+    # 4) Add new keywords
+    # SuperSynthIA keys
+    header0['SSDES'] = 'some SS Description'
+    header0['SSMET'] = 'SuperSynthIA'
+    header0['SSCVR'] = 'Oct 2024'
+    header0['SSMVR'] = 'pre-release Original Model'
+    header0['SSURL'] = 'https://github.com/rw3544/SuperSynthIA'  
+    header0['SSDAT'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     primary = fits.PrimaryHDU(data=None, header=None)
     image_hdu = fits.ImageHDU(data=imageData_int, header=header0)
@@ -305,6 +399,7 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     hdr['BZERO']  = (bzero, 'Real data offset')              
     hdr['BSCALE'] = (bscale, 'Real-to-int scale factor')
     hdr['BLANK']  = (int(blank), 'Undefined pixel value')
+    
 
     uncompressed_save_DIR = save_DIR.replace('.fits', '_uncompressed.fits')
     hdul.writeto(uncompressed_save_DIR, overwrite=True)
@@ -313,15 +408,35 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
         # Check if fpack is available
         if shutil.which('fpack') is not None:
             # Use fpack with RICE compression to compress the FITS file
-            t_command = " ".join(['fpack', '-O', save_DIR, '-q', '-0.01', uncompressed_save_DIR])
+            #t_command = " ".join(['fpack', '-O', save_DIR, '-q', '-0.01', uncompressed_save_DIR])
+            t_command = " ".join(['fpack', '-F', '-Y','-q', '-0.01', uncompressed_save_DIR]) 
             os.system(t_command)
-            # Remove the uncompressed file after compression
-            os.remove(uncompressed_save_DIR)
+            os.rename(uncompressed_save_DIR, save_DIR)
+            
         else:
             print(f'fpack not found. Saving uncompressed file: {uncompressed_save_DIR}')
     else:
         # Rename the uncompressed file to the final name
         os.rename(uncompressed_save_DIR, save_DIR)
+    
+    # Save the info_map if it exists
+    if info_map is not None:
+        
+        info_map_filename = file_name.replace(short_name_partition, 'confid_map')
+        info_map_save_dir = os.path.join(target, info_map_filename)
+        
+        info_header = header0.copy()
+        
+        # Save the info_map as a separate FITS file
+        info_primary = fits.PrimaryHDU(data=None, header=None)
+        info_hdu = fits.ImageHDU(data=info_map, header=info_header)
+        
+        hdul = fits.HDUList([info_primary, info_hdu])
+        hdul.writeto(info_map_save_dir, overwrite=True)
+        
+        if compress:
+            t_command = " ".join(['fpack', '-F', '-Y','-q', '-0.01', info_map_save_dir]) 
+            os.system(t_command)
 
 
 
