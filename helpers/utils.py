@@ -384,11 +384,11 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     
     # 4) Add new keywords
     # SuperSynthIA keys
-    header0['SSDES'] = 'some SS Description'
+    header0['SSDES'] = 'SuperSynthIA Project: https://rw3544.github.io/SuperSynthIA/'
     header0['SSMET'] = 'SuperSynthIA'
     header0['SSCVR'] = 'Oct 2024'
-    header0['SSMVR'] = 'pre-release Original Model'
-    header0['SSURL'] = 'https://github.com/rw3544/SuperSynthIA'  
+    header0['SSMVR'] = 'Original Model'
+    header0['SSURL'] = 'https://github.com/rw3544/SuperSynthIA_code'
     header0['SSDAT'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     primary = fits.PrimaryHDU(data=None, header=None)
@@ -422,7 +422,7 @@ def pack_to_fits(target, file_name, imageData, headerSrc, y_name, partition, com
     # Save the info_map if it exists
     if info_map is not None:
         
-        info_map_filename = file_name.replace(short_name_partition, 'confid_map')
+        info_map_filename = file_name.replace(short_name_partition, 'info_map')
         info_map_save_dir = os.path.join(target, info_map_filename)
         
         info_header = header0.copy()
